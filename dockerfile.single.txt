@@ -1,0 +1,29 @@
+# Utilisation d'une image minimale avec Node.js
+FROM node:20-slim
+
+# Création d'un utilisateur non-root
+RUN useradd -m appuser
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers package.json et package-lock.json en premier pour optimiser le cache
+COPY package*.json ./
+
+# Installation des dépendances en mode production
+RUN npm install --omit=dev
+
+# Copie du reste du code source
+COPY . .
+
+# Compilation du TypeScript (suppose un fichier tsconfig.json)
+RUN npm run build
+
+# Utilisation de l'utilisateur non-root
+USER appuser
+
+# Exposer le port de l'application
+EXPOSE 3000
+
+# Commande pour exécuter l'API
+CMD ["node", "dist/index.js"]

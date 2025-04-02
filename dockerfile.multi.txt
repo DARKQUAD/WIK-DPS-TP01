@@ -1,0 +1,40 @@
+# Étape de Build
+FROM node:20-slim AS builder
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie des fichiers package.json et package-lock.json pour optimiser le cache
+COPY package*.json ./
+
+# Installation des dépendances (y compris les devDependencies pour le build)
+RUN npm install
+
+# Copie du reste du code source
+COPY . .
+
+# Compilation du TypeScript
+RUN npm run build
+
+# Étape d’Exécution (image minimale)
+FROM node:20-slim
+
+# Création d'un utilisateur non-root
+RUN useradd -m appuser
+
+# Définition du répertoire de travail
+WORKDIR /app
+
+# Copie uniquement le nécessaire depuis l’étape de build
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+# Utilisation de l'utilisateur non-root
+USER appuser
+
+# Exposer le port
+EXPOSE 3000
+
+# Commande pour exécuter l'API
+CMD ["node", "dist/index.js"]
